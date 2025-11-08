@@ -163,36 +163,41 @@ export class EquipmentController {
         invoice,
       );
     } catch (error) {
-      // 🟡 Caso 1: error de validación (por ejemplo, faltan campos requeridos)
-      if (error.message?.includes('required')) {
+      // Error por campo requerido (Mongoose o validación)
+      if (error.message?.includes('is required')) {
+        const field = error.message.split(' ')[0]; // extrae el campo antes del 'is'
         throw new HttpException(
-          `Datos inválidos: ${error.message}`,
+          `Falta el campo obligatorio '${field}' al actualizar el equipo.`,
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      // 🟡 Caso 2: error de validación de Mongoose (por nombre)
+      // Error de validación de tipo Mongoose
       if (error.name === 'ValidationError') {
+        const fields = Object.keys(error.errors || {});
+        const fieldList = fields.join(', ');
         throw new HttpException(
-          `Error de validación: ${error.message}`,
+          `Error de validación en los campos: ${fieldList}`,
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      // 🟡 Caso 3: error por clave duplicada (Mongo)
+      // Clave duplicada en MongoDB
       if (error.code === 11000) {
+        const field = Object.keys(error.keyValue)[0];
         throw new HttpException(
-          'Ya existe un registro con esos datos',
+          `Ya existe un equipo con el mismo valor en el campo '${field}'.`,
           HttpStatus.CONFLICT,
         );
       }
 
-      // 🟠 Caso general: error interno del servidor
+      // Error general
       throw new HttpException(
         `Error al actualizar el equipo: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+
 
   }
 
