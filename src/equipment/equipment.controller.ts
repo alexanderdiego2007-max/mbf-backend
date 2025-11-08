@@ -134,7 +134,12 @@ export class EquipmentController {
   )
   async update(
     @Param('id') id: string,
+
+    @Body('username') username: string, // ✅ Recibimos username explícito
+    @Body('assignedTechnician') assignedTechnician: any, // ✅ si también lo usas
+
     @Body() data: Partial<Equipment>,
+
     @UploadedFiles()
     files: {
       photo_0?: Express.Multer.File[];
@@ -152,11 +157,19 @@ export class EquipmentController {
 
       const invoice = files.invoice?.[0] || null;
 
-      return await this.service.update(id, {
-        ...data,
-        authorizationDate: data.authorizationDate ? new Date(data.authorizationDate) : undefined,
-        deliveryDate: data.deliveryDate ? new Date(data.deliveryDate) : undefined,
-      }, photos, invoice);
+      // ✅ Aseguramos que username entre en el DTO final
+      return await this.service.update(
+        id,
+        {
+          ...data,
+          username, // <--- FORZAR que llegue al service
+          assignedTechnician, // <--- si aplica también
+          authorizationDate: data.authorizationDate ? new Date(data.authorizationDate) : undefined,
+          deliveryDate: data.deliveryDate ? new Date(data.deliveryDate) : undefined,
+        },
+        photos,
+        invoice,
+      );
     } catch (error) {
       throw new HttpException(
         `Error al actualizar el equipo: ${error.message}`,

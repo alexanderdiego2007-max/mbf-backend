@@ -157,27 +157,30 @@ export class EquipmentService {
     }
 
     // Asignar técnico si viene en los datos (asegúrate que sea un ObjectId válido)
+    // Asignar técnico si viene en los datos
     if (data.assignedTechnician) {
       updateData.assignedTechnician = new mongoose.Types.ObjectId(data.assignedTechnician);
 
-      // ✅ Buscar al técnico y notificar por WhatsApp (opcional)
       const technician = await this.userModel.findById(data.assignedTechnician);
       if (technician?.phone) {
-        // Aquí puedes integrar Twilio u otra API de WhatsApp
         await this.twilioClient.messages.create({
           body: `Hola ${technician.name}, se te asignó un nuevo equipo para revisión.`,
           from: this.configService.get<string>('TWILIO_WHATSAPP_NUMBER'),
-          // to: `whatsapp:${technician.phone}`, // asegúrate de guardar en DB con formato +57300xxxxxxx
           to: `whatsapp:+573245765262`
         });
       }
     }
 
-    // ✅ Actualiza y haz populate para devolver todos los datos del técnico
+    // ✅ NUEVO: Guardar también el username si lo mandan en el form
+    if (data.username) {
+      updateData.username = data.username;
+    }
+
     return this.equipmentModel
       .findByIdAndUpdate(id, updateData, { new: true })
       .populate('assignedTechnician', 'name username phone')
       .exec();
+
   }
 
   async updateCustomerApproval(id: string, approval: string): Promise<Equipment> {
