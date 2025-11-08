@@ -126,63 +126,97 @@ export class EquipmentService {
   // Actualizar un equipo
   async update(
     id: string,
-    data: Partial<Equipment>,
+    rawData: Partial<Equipment>,
     photos?: Express.Multer.File[],
     invoice?: Express.Multer.File,
   ): Promise<Equipment> {
-    const existingEquipment = await this.findOne(id);
-    if (!existingEquipment) {
-      throw new HttpException('Equipo no encontrado', HttpStatus.NOT_FOUND);
-    }
+    try {
+      // 🔹 1. Normalizar el body (puede venir con prototype nulo)
+      const data = Object.assign({}, rawData);
 
-    const updateData: Partial<Equipment> = { ...data };
-
-    // Convertir fechas si existen
-    if (data.authorizationDate) {
-      updateData.authorizationDate = new Date(data.authorizationDate);
-    }
-
-    if (data.deliveryDate) {
-      updateData.deliveryDate = new Date(data.deliveryDate);
-    }
-
-    // Si hay nuevas fotos, reemplazarlas
-    if (photos?.length) {
-      updateData.photos = photos.map((file) => file.buffer);
-    }
-
-    // Si hay nueva factura, reemplazarla
-    if (invoice) {
-      updateData.invoice = invoice.buffer;
-    }
-
-    // Asignar técnico si viene en los datos (asegúrate que sea un ObjectId válido)
-    // Asignar técnico si viene en los datos
-    if (data.assignedTechnician) {
-      updateData.assignedTechnician = new mongoose.Types.ObjectId(data.assignedTechnician);
-
-      const technician = await this.userModel.findById(data.assignedTechnician);
-      if (technician?.phone) {
-        await this.twilioClient.messages.create({
-          body: `Hola ${technician.name}, se te asignó un nuevo equipo para revisión.`,
-          from: this.configService.get<string>('TWILIO_WHATSAPP_NUMBER'),
-          to: `whatsapp:+573245765262`
-        });
+      // 🔹 2. Validar existencia del equipo
+      const existingEquipment = await this.findOne(id);
+      if (!existingEquipment) {
+        throw new HttpException('Equipo no encontrado', HttpStatus.NOT_FOUND);
       }
+
+      // 🔹 3. Validar campos obligatorios
+      const requiredFields = ['username', 'assignedTechnician'];
+      const missing = requiredFields.filter((f) => !data[f]);
+      if (missing.length > 0) {
+        throw new HttpException(
+          `Faltan los campos obligatorios: ${missing.join(', ')}.`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // 🔹 4. Armar el objeto de actualización
+      const updateData: Partial<Equipment> = { ...data };
+
+      // Convertir fechas si existen
+      if (data.authorizationDate) {
+        updateData.authorizationDate = new Date(data.authorizationDate);
+      }
+      if (data.deliveryDate) {
+        updateData.deliveryDate = new Date(data.deliveryDate);
+      }
+
+      // Reemplazar fotos si llegan nuevas
+      if (photos?.length) {
+        updateData.photos = photos.map((file) => file.buffer);
+      }
+
+      // Reemplazar factura si llega nueva
+      if (invoice) {
+        updateData.invoice = invoice.buffer;
+      }
+
+      // Asignar técnico si viene en los datos
+      if (data.assignedTechnician) {
+        updateData.assignedTechnician = new mongoose.Types.ObjectId(data.assignedTechnician);
+
+        const technician = await this.userModel.findById(data.assignedTechnician);
+        if (technician?.phone) {
+          await this.twilioClient.messages.create({
+            body: `Hola ${technician.name}, se te asignó un nuevo equipo para revisión.`,
+            from: this.configService.get<string>('TWILIO_WHATSAPP_NUMBER'),
+            to: `whatsapp:+573245765262`,
+          });
+        }
+      }
+
+      // Guardar también el username
+      if (data.username) {
+        updateData.username = data.username;
+      }
+
+      // 🔹 5. Ejecutar actualización
+      const updatedEquipment = await this.equipmentModel
+        .findByIdAndUpdate(id, updateData, { new: true, runValidators: false })
+        .populate('assignedTechnician', 'name username phone')
+        .exec();
+
+      return updatedEquipment;
+    } catch (error) {
+      // 🔹 6. Manejo de errores más informativo
+      console.error('❌ Error al actualizar equipo:', error);
+
+      if (error instanceof HttpException) throw error;
+
+      if (error.message?.includes('username')) {
+        throw new HttpException(
+          `Falta el campo obligatorio 'username' al actualizar el equipo.`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      throw new HttpException(
+        `Error interno al actualizar el equipo: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    // ✅ NUEVO: Guardar también el username si lo mandan en el form
-    if (data.username) {
-      updateData.username = data.username;
-    }
-
-    return this.equipmentModel
-      .findByIdAndUpdate(id, updateData, { new: true, runValidators: false })
-      .populate('assignedTechnician', 'name username phone')
-      .exec();
-
-
   }
+
 
   async updateCustomerApproval(id: string, approval: string): Promise<Equipment> {
     const updateData: any = {
