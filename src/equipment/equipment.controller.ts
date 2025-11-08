@@ -134,12 +134,7 @@ export class EquipmentController {
   )
   async update(
     @Param('id') id: string,
-
-    @Body('username') username: string, // ✅ Recibimos username explícito
-    @Body('assignedTechnician') assignedTechnician: any, // ✅ si también lo usas
-
-    @Body() data: Partial<Equipment>,
-
+    @Body() data: Partial<Equipment>, // ✅ que reciba TODO en un solo objeto
     @UploadedFiles()
     files: {
       photo_0?: Express.Multer.File[];
@@ -157,13 +152,10 @@ export class EquipmentController {
 
       const invoice = files.invoice?.[0] || null;
 
-      // ✅ Aseguramos que username entre en el DTO final
       return await this.service.update(
         id,
         {
-          ...data,
-          username, // <--- FORZAR que llegue al service
-          assignedTechnician, // <--- si aplica también
+          ...data, // ✅ ya trae username y assignedTechnician sin perderlos
           authorizationDate: data.authorizationDate ? new Date(data.authorizationDate) : undefined,
           deliveryDate: data.deliveryDate ? new Date(data.deliveryDate) : undefined,
         },
@@ -177,6 +169,7 @@ export class EquipmentController {
       );
     }
   }
+
 
   @Delete(':id')
   async delete(@Param('id') id: string): Promise<void> {
