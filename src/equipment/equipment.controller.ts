@@ -163,11 +163,37 @@ export class EquipmentController {
         invoice,
       );
     } catch (error) {
+      // 🟡 Caso 1: error de validación (por ejemplo, faltan campos requeridos)
+      if (error.message?.includes('required')) {
+        throw new HttpException(
+          `Datos inválidos: ${error.message}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // 🟡 Caso 2: error de validación de Mongoose (por nombre)
+      if (error.name === 'ValidationError') {
+        throw new HttpException(
+          `Error de validación: ${error.message}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // 🟡 Caso 3: error por clave duplicada (Mongo)
+      if (error.code === 11000) {
+        throw new HttpException(
+          'Ya existe un registro con esos datos',
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      // 🟠 Caso general: error interno del servidor
       throw new HttpException(
         `Error al actualizar el equipo: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+
   }
 
 
