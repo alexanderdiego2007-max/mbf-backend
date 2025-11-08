@@ -143,6 +143,7 @@ export class EquipmentController {
       invoice?: Express.Multer.File[];
     },
   ): Promise<Equipment> {
+    console.log('Body recibido:', data);
     try {
       const photos = [
         files.photo_0?.[0],
