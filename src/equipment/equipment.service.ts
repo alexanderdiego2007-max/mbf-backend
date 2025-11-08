@@ -177,9 +177,10 @@ export class EquipmentService {
     }
 
     return this.equipmentModel
-      .findByIdAndUpdate(id, updateData, { new: true })
+      .findByIdAndUpdate(id, updateData, { new: true, runValidators: false })
       .populate('assignedTechnician', 'name username phone')
       .exec();
+
 
   }
 
