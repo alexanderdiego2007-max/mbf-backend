@@ -258,4 +258,52 @@ export class UsersController {
   async googleLogin(@Body('idToken') idToken: string) {
     return this.authService.verifyGoogleToken(idToken);
   }
+
+  @Post('users/client')
+  async createClient(
+    @Body()
+    body: {
+      name: string;
+      lastname: string;
+      doc: string;
+      username: string; // email
+      address?: string;
+      phone?: string;
+      company?: string;
+    },
+  ) {
+    const {
+      name,
+      lastname,
+      doc,
+      username,
+      address,
+      phone,
+      company,
+    } = body;
+
+    if (!name || !doc || !username) {
+      throw new BadRequestException('Campos obligatorios incompletos');
+    }
+
+    // Password temporal
+    const tempPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    return await this.usersService.create(
+      name,
+      lastname,
+      company || '',
+      doc,
+      'Cliente',
+      username,
+      hashedPassword,
+      hashedPassword,
+      1,
+      'Cliente',
+      address,
+      phone,
+    );
+  }
+
 }
