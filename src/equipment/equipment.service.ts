@@ -28,19 +28,23 @@ export class EquipmentService {
   // Crear un nuevo equipo con fotos y factura
   async create(
     data: Partial<Equipment>,
-    photos?: Express.Multer.File[],
+    photoInitial?: Express.Multer.File[],
+    photoFinal?: Express.Multer.File[],
     invoice?: Express.Multer.File,
   ): Promise<Equipment> {
-    const photoBuffers = photos?.map((file) => file.buffer) || [];
-    const invoiceBuffer = invoice?.buffer || null;
+    const initialBuffers = photoInitial?.map(f => f.buffer) || [];
+    const finalBuffers = photoFinal?.map(f => f.buffer) || [];
 
     const newEquipment = new this.equipmentModel({
       ...data,
-      photos: photoBuffers,
-      invoice: invoiceBuffer,
+      photoInitial: initialBuffers,
+      photoFinal: finalBuffers,
+      invoice: invoice?.buffer || null,
     });
+
     return newEquipment.save();
   }
+
 
   // Obtener todos los equipos
   async findAll(): Promise<Equipment[]> {
@@ -105,13 +109,19 @@ export class EquipmentService {
     };
   }
 
-  async getPhotos(id: string): Promise<Buffer[]> {
+  async getPhotos(id: string) {
     const equipment = await this.equipmentModel.findById(id).exec();
-    if (!equipment || !equipment.photos) {
-      throw new NotFoundException('Fotos no encontradas');
+
+    if (!equipment) {
+      throw new NotFoundException('Photos not found');
     }
-    return equipment.photos;
+
+    return {
+      photoInitial: equipment.photoInitial || [],
+      photoFinal: equipment.photoFinal || [],
+    };
   }
+
 
   async getInvoice(id: string): Promise<string> {
     const equipment = await this.equipmentModel.findById(id).exec();
@@ -127,7 +137,8 @@ export class EquipmentService {
   async update(
     id: string,
     rawData: Partial<Equipment>,
-    photos?: Express.Multer.File[],
+    photoInitial?: Express.Multer.File[],
+    photoFinal?: Express.Multer.File[],
     invoice?: Express.Multer.File,
   ): Promise<Equipment> {
     try {
@@ -162,9 +173,15 @@ export class EquipmentService {
       }
 
       // Reemplazar fotos si llegan nuevas
-      if (photos?.length) {
-        updateData.photos = photos.map((file) => file.buffer);
+      if (photoInitial?.length) {
+        updateData.photoInitial = photoInitial.map(f => f.buffer);
       }
+
+      if (photoFinal?.length) {
+        updateData.photoFinal = photoFinal.map(f => f.buffer);
+      }
+
+
 
       // Reemplazar factura si llega nueva
       if (invoice) {
@@ -240,22 +257,26 @@ export class EquipmentService {
     }
   }
 
-  async removePhoto(id: string, photoUrl: string): Promise<Equipment> {
-    const equipment = await this.findOne(id);
+  async removePhoto(
+    id: string,
+    type: 'initial' | 'final',
+    photoBase64: string,
+  ): Promise<Equipment> {
+    const equipment = await this.equipmentModel.findById(id);
 
-    if (!equipment.photos || !Array.isArray(equipment.photos)) {
-      throw new NotFoundException('El equipo no tiene fotos registradas.');
-    }
+    if (!equipment) throw new NotFoundException('Equipment not found');
 
-    const updatedPhotos = equipment.photos.filter(photo => photo.toString('base64') !== photoUrl);
+    const field = type === 'initial' ? 'photoInitial' : 'photoFinal';
 
-    if (updatedPhotos.length === equipment.photos.length) {
-      throw new NotFoundException('Foto no encontrada en el equipo.');
-    }
+    const updated = equipment[field].filter(
+      photo => photo.toString('base64') !== photoBase64,
+    );
 
-    equipment.photos = updatedPhotos;
-    return this.equipmentModel.findByIdAndUpdate(id, equipment, { new: true }).exec();
+    equipment[field] = updated;
+
+    return equipment.save();
   }
+
 
 
   async generatePDF(equipment: any): Promise<Buffer> {
@@ -648,65 +669,126 @@ export class EquipmentService {
       const imageWidth = 100;
       const imageHeight = 50;
       const margin = 50;
+      const imageSize = 142; // 5 cm en puntos
 
-      if (equipment.photos && Array.isArray(equipment.photos)) {
-        equipment.photos.forEach((photoBinary, index) => {
+      // =============================
+      // FOTOS INICIALES
+      // =============================
+
+      doc.font("Helvetica-Bold").fontSize(12).text("FOTOS INICIALES", contentX, contentY);
+      contentY += 20;
+
+      if (equipment.photosInitial && Array.isArray(equipment.photosInitial)) {
+
+        equipment.photosInitial.slice(0, 2).forEach((photoBinary, index) => {
           try {
             let base64String;
 
-            // 📌 Detectar si el formato es Binary en lugar de String
             if (typeof photoBinary !== "string") {
-              console.warn(`⚠️ La imagen en posición ${index} no es un string, intentando extraer Base64...`);
-
-              // Si el objeto tiene un método toString(), se usa
-              if (photoBinary.toString) {
+              if (photoBinary?.toString) {
                 base64String = photoBinary.toString("base64");
               } else {
-                console.error(`🚨 No se pudo convertir la imagen en posición ${index} a Base64.`);
                 return;
               }
             } else {
               base64String = photoBinary;
             }
 
-            // 📌 Agregar el prefijo Base64 si falta
             if (!base64String.startsWith("data:image")) {
-              console.warn(`⚠️ No tiene prefijo Base64 en posición ${index}, agregando "data:image/png;base64,"...`);
               base64String = `data:image/png;base64,${base64String}`;
             }
 
-            // Extraer solo la parte de la imagen
             const base64Data = base64String.split(",")[1];
-
-            // Convertir a Buffer
             const imageBuffer = Buffer.from(base64Data, "base64");
 
-            // Validar si el buffer es suficientemente grande
             if (imageBuffer.length < 500) {
-              console.error(`🚨 El buffer generado para la imagen en posición ${index} es demasiado pequeño (${imageBuffer.length} bytes).`);
               return;
             }
 
-            // Si la posición Y supera la altura del documento, agregar nueva página
-            if (contentY + imageHeight + margin > doc.page.height) {
+            if (contentY + imageSize > doc.page.height - 50) {
               doc.addPage();
               contentY = margin;
             }
 
-            // Agregar la imagen al PDF
-            doc.image(imageBuffer, contentX, contentY, { width: imageWidth, height: imageHeight });
+            doc.image(
+              imageBuffer,
+              contentX + (index * (imageSize + 20)),
+              contentY,
+              { width: imageSize, height: imageSize }
+            );
 
-            // Ajustar la posición Y para la siguiente imagen
-            contentY += imageHeight + 10;
-
-            console.log(`✅ Imagen en posición ${index} agregada correctamente.`);
           } catch (error) {
-            console.error(`❌ Error al procesar imagen en posición ${index}:`, error.message);
+            console.error("Error procesando foto inicial:", error.message);
           }
         });
+
+        contentY += imageSize + 30;
+
       } else {
-        console.error("❌ equipment.photos no es un array o está vacío:", equipment.photos);
+        doc.font("Helvetica").fontSize(10).text("No se adjuntaron fotos iniciales.", contentX, contentY);
+        contentY += 20;
       }
+
+
+
+      // =============================
+      // FOTOS FINALES
+      // =============================
+
+      doc.font("Helvetica-Bold").fontSize(12).text("FOTOS FINALES", contentX, contentY);
+      contentY += 20;
+
+      if (equipment.photosFinal && Array.isArray(equipment.photosFinal)) {
+
+        equipment.photosFinal.slice(0, 2).forEach((photoBinary, index) => {
+          try {
+            let base64String;
+
+            if (typeof photoBinary !== "string") {
+              if (photoBinary?.toString) {
+                base64String = photoBinary.toString("base64");
+              } else {
+                return;
+              }
+            } else {
+              base64String = photoBinary;
+            }
+
+            if (!base64String.startsWith("data:image")) {
+              base64String = `data:image/png;base64,${base64String}`;
+            }
+
+            const base64Data = base64String.split(",")[1];
+            const imageBuffer = Buffer.from(base64Data, "base64");
+
+            if (imageBuffer.length < 500) {
+              return;
+            }
+
+            if (contentY + imageSize > doc.page.height - 50) {
+              doc.addPage();
+              contentY = margin;
+            }
+
+            doc.image(
+              imageBuffer,
+              contentX + (index * (imageSize + 20)),
+              contentY,
+              { width: imageSize, height: imageSize }
+            );
+
+          } catch (error) {
+            console.error("Error procesando foto final:", error.message);
+          }
+        });
+
+        contentY += imageSize + 30;
+
+      } else {
+        doc.font("Helvetica").fontSize(10).text("No se adjuntaron fotos finales.", contentX, contentY);
+        contentY += 20;
+      }
+
 
 
 

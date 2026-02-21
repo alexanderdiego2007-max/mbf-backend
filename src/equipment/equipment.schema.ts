@@ -21,8 +21,12 @@ export class Equipment {
   @Prop({ required: true })
   issue: string;
 
-  @Prop()
-  photos: Buffer[];
+  @Prop({ type: [Buffer], default: [] })
+  photoInitial?: Buffer[];
+
+  @Prop({ type: [Buffer], default: [] })
+  photoFinal?: Buffer[];
+
 
   @Prop({ type: Buffer })
   invoice: string | Buffer;

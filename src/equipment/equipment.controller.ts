@@ -35,9 +35,8 @@ export class EquipmentController {
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: 'photo_0', maxCount: 1 },
-      { name: 'photo_1', maxCount: 1 },
-      { name: 'photo_2', maxCount: 1 },
+      { name: 'photoInitial', maxCount: 2 },
+      { name: 'photoFinal', maxCount: 2 },
       { name: 'invoice', maxCount: 1 },
     ]),
   )
@@ -45,22 +44,28 @@ export class EquipmentController {
     @Body() data: Partial<Equipment>,
     @UploadedFiles()
     files: {
-      photo_0?: Express.Multer.File[];
-      photo_1?: Express.Multer.File[];
-      photo_2?: Express.Multer.File[];
+      photoInitial?: Express.Multer.File[];
+      photoFinal?: Express.Multer.File[];
       invoice?: Express.Multer.File[];
     },
   ): Promise<Equipment> {
     try {
-      const photos = [
-        files.photo_0?.[0],
-        files.photo_1?.[0],
-        files.photo_2?.[0],
-      ].filter(Boolean); // Elimina valores undefined
+      const initialPhotos = files.photoInitial || [];
+      const finalPhotos = files.photoFinal || [];
+
+      const allPhotos = [
+        ...initialPhotos,
+        ...finalPhotos,
+      ];
 
       const invoice = files.invoice?.[0] || null;
 
-      return await this.service.create({ ...data }, photos, invoice);
+      return await this.service.create(
+        { ...data },
+        allPhotos,
+        invoice,
+      );
+
     } catch (error) {
       throw new HttpException(
         `Error al crear el equipo: ${error.message}`,
@@ -68,6 +73,7 @@ export class EquipmentController {
       );
     }
   }
+
 
   @Get()
   async findAll(
