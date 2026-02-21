@@ -4,7 +4,7 @@ import mongoose, { Document } from 'mongoose';
 
 export type EquipmentDocument = Equipment & Document;
 
-@Schema()
+@Schema({ timestamps: true })
 export class Equipment {
   @Prop({ required: true })
   name: string;
