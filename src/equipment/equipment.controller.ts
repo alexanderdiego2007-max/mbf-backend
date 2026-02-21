@@ -40,6 +40,14 @@ export class EquipmentController {
       { name: 'invoice', maxCount: 1 },
     ]),
   )
+  @Post()
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'photoInitial', maxCount: 2 },
+      { name: 'photoFinal', maxCount: 2 },
+      { name: 'invoice', maxCount: 1 },
+    ]),
+  )
   async create(
     @Body() data: Partial<Equipment>,
     @UploadedFiles()
@@ -52,17 +60,12 @@ export class EquipmentController {
     try {
       const initialPhotos = files.photoInitial || [];
       const finalPhotos = files.photoFinal || [];
-
-      const allPhotos = [
-        ...initialPhotos,
-        ...finalPhotos,
-      ];
-
       const invoice = files.invoice?.[0] || null;
 
       return await this.service.create(
         { ...data },
-        allPhotos,
+        initialPhotos,
+        finalPhotos,
         invoice,
       );
 
@@ -73,6 +76,7 @@ export class EquipmentController {
       );
     }
   }
+
 
 
   @Get()
@@ -105,19 +109,25 @@ export class EquipmentController {
   async getPhotos(@Param('id') id: string, @Res() res: Response) {
     try {
       const photos = await this.service.getPhotos(id);
-      if (!photos || photos.length === 0) {
+
+      if (
+        !photos ||
+        (!photos.photoInitial?.length && !photos.photoFinal?.length)
+      ) {
         return res.status(404).json({ message: 'Fotos no encontradas.' });
       }
 
-      res.json(
-        photos.map((photo) => ({
-          buffer: photo.toString('base64'),
-        })),
-      );
+      res.json({
+        initial: photos.photoInitial?.map(p => p.toString('base64')) || [],
+        final: photos.photoFinal?.map(p => p.toString('base64')) || [],
+      });
+
     } catch (error) {
       res.status(500).json({ message: 'Error al obtener las fotos.' });
     }
   }
+
+
 
   @Get(':id/invoice')
   async getInvoice(@Param('id') id: string, @Res() res: Response) {
@@ -132,81 +142,49 @@ export class EquipmentController {
   @Put(':id')
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: 'photo_0', maxCount: 1 },
-      { name: 'photo_1', maxCount: 1 },
-      { name: 'photo_2', maxCount: 1 },
+      { name: 'photoInitial', maxCount: 2 },
+      { name: 'photoFinal', maxCount: 2 },
       { name: 'invoice', maxCount: 1 },
     ]),
   )
   async update(
     @Param('id') id: string,
-    @Body() data: Partial<Equipment>, // ✅ que reciba TODO en un solo objeto
+    @Body() data: Partial<Equipment>,
     @UploadedFiles()
     files: {
-      photo_0?: Express.Multer.File[];
-      photo_1?: Express.Multer.File[];
-      photo_2?: Express.Multer.File[];
+      photoInitial?: Express.Multer.File[];
+      photoFinal?: Express.Multer.File[];
       invoice?: Express.Multer.File[];
     },
   ): Promise<Equipment> {
-    console.log('Body recibido:', data);
     try {
-      const photos = [
-        files.photo_0?.[0],
-        files.photo_1?.[0],
-        files.photo_2?.[0],
-      ].filter(Boolean);
-
+      const initialPhotos = files.photoInitial || [];
+      const finalPhotos = files.photoFinal || [];
       const invoice = files.invoice?.[0] || null;
 
       return await this.service.update(
         id,
         {
-          ...data, // ✅ ya trae username y assignedTechnician sin perderlos
-          authorizationDate: data.authorizationDate ? new Date(data.authorizationDate) : undefined,
-          deliveryDate: data.deliveryDate ? new Date(data.deliveryDate) : undefined,
+          ...data,
+          authorizationDate: data.authorizationDate
+            ? new Date(data.authorizationDate)
+            : undefined,
+          deliveryDate: data.deliveryDate
+            ? new Date(data.deliveryDate)
+            : undefined,
         },
-        photos,
+        initialPhotos,
+        finalPhotos,
         invoice,
       );
     } catch (error) {
-      // Error por campo requerido (Mongoose o validación)
-      if (error.message?.includes('is required')) {
-        const field = error.message.split(' ')[0]; // extrae el campo antes del 'is'
-        throw new HttpException(
-          `Falta el campo obligatorio '${field}' al actualizar el equipo.`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Error de validación de tipo Mongoose
-      if (error.name === 'ValidationError') {
-        const fields = Object.keys(error.errors || {});
-        const fieldList = fields.join(', ');
-        throw new HttpException(
-          `Error de validación en los campos: ${fieldList}`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Clave duplicada en MongoDB
-      if (error.code === 11000) {
-        const field = Object.keys(error.keyValue)[0];
-        throw new HttpException(
-          `Ya existe un equipo con el mismo valor en el campo '${field}'.`,
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      // Error general
       throw new HttpException(
         `Error al actualizar el equipo: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-
-
   }
+
 
 
   @Delete(':id')
@@ -217,11 +195,21 @@ export class EquipmentController {
   @Patch(':id/photo')
   async deletePhoto(
     @Param('id') id: string,
-    @Body('photoUrl') photoUrl: string,
+    @Body('type') type: "initial" | "final",
+    @Body('photoBase64') photoBase64: string,
   ) {
     try {
-      const updatedEquipment = await this.service.removePhoto(id, photoUrl);
-      return { message: 'Foto eliminada correctamente', equipment: updatedEquipment };
+      const updatedEquipment = await this.service.removePhoto(
+        id,
+        type,
+        photoBase64,
+      );
+
+      return {
+        message: 'Foto eliminada correctamente',
+        equipment: updatedEquipment,
+      };
+
     } catch (error) {
       throw new HttpException(
         `Error al eliminar la foto: ${error.message}`,
@@ -229,6 +217,7 @@ export class EquipmentController {
       );
     }
   }
+
 
   @Get('generate-pdf/:id')
   async generatePDF(@Param('id') id: string, @Res() res: Response) {
