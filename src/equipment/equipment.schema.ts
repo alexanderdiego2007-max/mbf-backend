@@ -49,6 +49,15 @@ export class Equipment {
   @Prop({ type: Date })
   deliveryDate?: Date;
 
+  @Prop()
+  serviceType?: string;
+
+  @Prop({ type: Date })
+  serviceEndDate?: Date;
+
+  @Prop({ type: Date })
+  estimatedDeliveryDate?: Date;
+
   // Nuevos campos opcionales
   @Prop()
   firstname?: string;
