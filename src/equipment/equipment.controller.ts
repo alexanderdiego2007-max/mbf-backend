@@ -31,15 +31,6 @@ declare module 'express' {
 @Controller('equipment')
 export class EquipmentController {
   constructor(private readonly service: EquipmentService) { }
-
-  @Post()
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'photoInitial', maxCount: 2 },
-      { name: 'photoFinal', maxCount: 2 },
-      { name: 'invoice', maxCount: 1 },
-    ]),
-  )
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor([
