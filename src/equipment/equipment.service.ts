@@ -151,16 +151,6 @@ export class EquipmentService {
         throw new HttpException('Equipo no encontrado', HttpStatus.NOT_FOUND);
       }
 
-      // 🔹 3. Validar campos obligatorios
-      const requiredFields = ['username', 'assignedTechnician'];
-      const missing = requiredFields.filter((f) => !data[f]);
-      if (missing.length > 0) {
-        throw new HttpException(
-          `Faltan los campos obligatorios: ${missing.join(', ')}.`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
       // 🔹 4. Armar el objeto de actualización
       const updateData: Partial<Equipment> = { ...data };
 
