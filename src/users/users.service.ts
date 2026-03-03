@@ -50,6 +50,7 @@ export class UsersService {
     role: string,
     address?: string, // Campo opcional
     phone?: string, // Campo opcional
+    city?: string, // Campo opcional
   ): Promise<User> {
     const existingUser = await this.findOne(username);
     if (existingUser) {
@@ -75,6 +76,7 @@ export class UsersService {
       role,
       address, // Agregar campo opcional
       phone, // Agregar campo opcional
+      city, // Agregar campo opcional
     });
     return newUser.save();
   }

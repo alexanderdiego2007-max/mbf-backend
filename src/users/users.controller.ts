@@ -270,6 +270,7 @@ export class UsersController {
       address?: string;
       phone?: string;
       company?: string;
+      city?: string;
     },
   ) {
     const {
@@ -280,6 +281,7 @@ export class UsersController {
       address,
       phone,
       company,
+      city,
     } = body;
 
     if (!name || !doc || !username) {
@@ -303,6 +305,7 @@ export class UsersController {
       'Cliente',
       address,
       phone,
+      city,
     );
   }
 
