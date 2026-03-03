@@ -15,6 +15,7 @@ export const UserSchema = new Schema({
   resetPasswordExpires: { type: Date, required: false }, // Campo opcional
   role: { type: String, required: true },
   address: { type: String, required: false }, // Campo opcional
+  city: { type: String, required: false }, // AGREGAR
   phone: { type: String, required: false }, // Campo opcional
 });
 
@@ -33,5 +34,6 @@ export interface User extends Document {
   resetPasswordExpires?: Date | null; // Campo opcional
   role: string;
   address?: string; // Campo opcional
+  city?: string; // Campo opcional
   phone?: string; // Campo opcional
 }
