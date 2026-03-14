@@ -792,6 +792,37 @@ export class EquipmentService {
         .text(equipment.diagnosis || 'Pendiente de revisión.');
       contentY += 30;
 
+      contentY += 40;
+
+      // ==========================
+      // FICHA TÉCNICA
+      // ==========================
+
+      doc.font("Helvetica-Bold")
+        .fontSize(14)
+        .text('FICHA TÉCNICA', contentX, contentY, {
+          width: rightColWidth,
+          underline: true,
+        });
+
+      contentY += 20;
+
+      doc
+        .font('Helvetica-Bold')
+        .text('ID: ', contentX, contentY, { continued: true })
+        .font('Helvetica')
+        .text(equipment._id?.toString() || 'No disponible');
+
+      contentY += 20;
+
+      doc
+        .font('Helvetica-Bold')
+        .text('SERVICIO REALIZADO POR: ', contentX, contentY, { continued: true })
+        .font('Helvetica')
+        .text(
+          equipment.assignedTechnician?.name || 'No asignado'
+        );
+
       // **Finalizar PDF**
       doc.end();
     });
