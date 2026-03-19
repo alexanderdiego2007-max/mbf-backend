@@ -293,12 +293,12 @@ export class EquipmentService {
 
         doc.font("Helvetica-Bold")
           .fontSize(12)
-          .text('IMPORTACIONES MEDIBÁSCULAS ZOMAC S.A.S', marginX - 30, textY, {
+          .text('GRUPO MBF S.A.', marginX - 30, textY, {
             width: leftColWidth + 30,
             align: 'center',
           });
 
-        doc.font("Helvetica").fontSize(10).text('NIT: 901.561.138-2', marginX, textY + 30, {
+        doc.font("Helvetica").fontSize(10).text('NIT: 901. 998. 455 - 9', marginX, textY + 30, {
           width: leftColWidth - 10,
           align: 'center',
         });
@@ -424,31 +424,31 @@ export class EquipmentService {
           width: textWidthClient,
           align: 'center'
         });
-        doc
-          .fontSize(8)
-          .text('Tel: +57 304 130 1189', marginX, textY + 390, {
-            width: leftColWidth - 10,
-            align: 'left',
-          });
+      //   doc
+      //     .fontSize(8)
+     //      .text('Tel: +57 304 130 1189', marginX, textY + 390, {
+     //        width: leftColWidth - 10,
+     //       align: 'left',
+      //     });
 
-        doc.fontSize(8).text('info@medibasculas.com', marginX, textY + 401, {
-          width: leftColWidth - 10,
-          align: 'left',
-        });
+    //     doc.fontSize(8).text('info@medibasculas.com', marginX, textY + 401, {
+     //      width: leftColWidth - 10,
+    //       align: 'left',
+     //    });
 
-        doc.fontSize(8).text('Cra 45D #60-72, Medellin Colombia', marginX, textY + 412, {
+        doc.fontSize(8).text('Cll 44 # 68-70, Medellin Colombia', marginX, textY + 412, {
           width: leftColWidth - 10,
           align: 'left',
         });
-        doc.fontSize(8).text('+57 304 130 1189', marginX, textY + 449, {
+        doc.fontSize(8).text('+57 310 456 2743', marginX, textY + 449, {
           width: leftColWidth - 10,
           align: 'left',
         });
-        doc.fontSize(8).text('serviciotecnico@medibasculas.com', marginX, textY + 460, {
+        doc.fontSize(8).text('serviciotecnico@grupombf.com.co', marginX, textY + 460, {
           width: leftColWidth - 10,
           align: 'left',
         });
-        doc.fontSize(8).text('http://www.medibasculas.com/', marginX, textY + 471, {
+        doc.fontSize(8).text('www.grupombf.com.co', marginX, textY + 471, {
           width: leftColWidth - 10,
           align: 'left',
         });
@@ -494,12 +494,12 @@ export class EquipmentService {
       doc
         .fontSize(10)
         .font('Helvetica-Bold')
-        .text('RECEPCIÓN EQUIPO', boxX, boxY + 5, { width: boxWidth, align: 'center' });
+        .text('ORDEN DE SERVICIO', boxX, boxY + 5, { width: boxWidth, align: 'center' });
 
       doc
         .fontSize(12)
         .font('Helvetica-Bold')
-        .text('RE-0496', boxX, boxY + 25, { width: boxWidth, align: 'center' });
+        .text('OS-0496', boxX, boxY + 25, { width: boxWidth, align: 'center' });
 
 
       contentY += 75;
