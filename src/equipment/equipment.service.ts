@@ -294,7 +294,7 @@ export class EquipmentService {
         doc.font("Helvetica-Bold")
           .fontSize(12)
           .text('GRUPO MBF S.A.', marginX - 30, textY, {
-            width: leftColWidth + 30,
+            width: leftColWidth + 40,
             align: 'center',
           });
 
