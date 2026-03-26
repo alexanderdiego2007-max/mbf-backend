@@ -8,17 +8,19 @@ import { join } from 'path';
 import { User } from 'src/users/user.schema';
 import { Twilio } from 'twilio';
 import { ConfigService } from '@nestjs/config';
+import { CounterService } from 'src/counter/counter.service';
 
 @Injectable()
 export class EquipmentService {
   private twilioClient: Twilio;
 
-  constructor(
-    @InjectModel(Equipment.name)
-    private equipmentModel: Model<EquipmentDocument>,
-    @InjectModel('User') private userModel: Model<User>,
-    private readonly configService: ConfigService, // inyectamos ConfigService
-  ) {
+constructor(
+  @InjectModel(Equipment.name)
+  private equipmentModel: Model<EquipmentDocument>,
+  @InjectModel('User') private userModel: Model<User>,
+  private readonly configService: ConfigService,
+  private readonly counterService: CounterService, //  NUEVO
+) {
     this.twilioClient = new Twilio(
       this.configService.get<string>('TWILIO_ACCOUNT_SID'),
       this.configService.get<string>('TWILIO_AUTH_TOKEN'),
@@ -26,24 +28,31 @@ export class EquipmentService {
   }
 
   // Crear un nuevo equipo con fotos y factura
-  async create(
-    data: Partial<Equipment>,
-    photoInitial?: Express.Multer.File[],
-    photoFinal?: Express.Multer.File[],
-    invoice?: Express.Multer.File,
-  ): Promise<Equipment> {
-    const initialBuffers = photoInitial?.map(f => f.buffer) || [];
-    const finalBuffers = photoFinal?.map(f => f.buffer) || [];
+async create(
+  data: Partial<Equipment>,
+  photoInitial?: Express.Multer.File[],
+  photoFinal?: Express.Multer.File[],
+  invoice?: Express.Multer.File,
+): Promise<Equipment> {
 
-    const newEquipment = new this.equipmentModel({
-      ...data,
-      photoInitial: initialBuffers,
-      photoFinal: finalBuffers,
-      invoice: invoice?.buffer || null,
-    });
+  const initialBuffers = photoInitial?.map(f => f.buffer) || [];
+  const finalBuffers = photoFinal?.map(f => f.buffer) || [];
 
-    return newEquipment.save();
-  }
+  //  GENERAR CONSECUTIVO
+  const nextSequence = await this.counterService.getNextSequence('serviceOrder');
+
+  const serviceOrderFormatted = `OS-${nextSequence.toString().padStart(4, '0')}`;
+
+  const newEquipment = new this.equipmentModel({
+    ...data,
+    serviceOrder: serviceOrderFormatted, //  guardar
+    photoInitial: initialBuffers,
+    photoFinal: finalBuffers,
+    invoice: invoice?.buffer || null,
+  });
+
+  return newEquipment.save();
+}
 
 
   // Obtener todos los equipos
@@ -499,7 +508,10 @@ export class EquipmentService {
       doc
         .fontSize(12)
         .font('Helvetica-Bold')
-        .text('OS-0496', boxX, boxY + 25, { width: boxWidth, align: 'center' });
+.text(equipment.serviceOrder || 'OS-0000', boxX, boxY + 25, {
+  width: boxWidth,
+  align: 'center'
+});
 
 
       contentY += 75;

@@ -6,6 +6,10 @@ export type EquipmentDocument = Equipment & Document;
 
 @Schema({ timestamps: true })
 export class Equipment {
+
+ @Prop()
+  serviceOrder: string;
+
   @Prop({ required: true })
   name: string;
 
