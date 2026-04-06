@@ -309,4 +309,66 @@ export class UsersController {
     );
   }
 
+  @Post('users/technician')
+  async createTechnician(
+    @Body()
+    body: {
+      name: string;
+      lastname: string;
+      username: string; // email
+      phone?: string;
+      position?: string;
+      company?: string;
+      doc?: string;
+    },
+  ) {
+    const {
+      name,
+      lastname,
+      username,
+      phone,
+      position,
+      company,
+      doc,
+    } = body;
+
+    //  Validación mínima
+    if (!name || !lastname || !username) {
+      throw new BadRequestException('Campos obligatorios incompletos');
+    }
+
+    //  Password automático
+    const tempPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    try {
+      const user = await this.usersService.create(
+        name,
+        lastname,
+        company || '',
+        doc || '',
+        position || 'Tecnico',
+        username,
+        hashedPassword,
+        hashedPassword,
+        1,              // check
+        'Tecnico',      //  role fijo
+        '',             // address
+        phone || '',
+      );
+
+      return {
+        message: 'Técnico creado correctamente',
+        user,
+        tempPassword, // opcional (puedes quitarlo en producción)
+      };
+
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Error al crear técnico',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
 }
