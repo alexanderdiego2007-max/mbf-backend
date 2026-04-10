@@ -18,20 +18,8 @@ export class SparePart {
     @Prop({ default: 0 })
     stock: number;
 
-    @Prop({ default: 0 })
-    minStock: number;
-
     @Prop()
     location: string;
-
-    @Prop({
-        enum: ['available', 'low', 'out', 'inactive'],
-        default: 'available',
-    })
-    status: string;
-
-    @Prop({ default: true })
-    active: boolean;
 }
 
 export const SparePartSchema = SchemaFactory.createForClass(SparePart);
