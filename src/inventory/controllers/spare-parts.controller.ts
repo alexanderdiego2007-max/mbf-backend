@@ -9,7 +9,7 @@ import {
     Query,
 } from '@nestjs/common';
 
-@Controller('inventory/spare-parts')
+@Controller('spare-parts')
 export class SparePartsController {
 
     // Crear repuesto

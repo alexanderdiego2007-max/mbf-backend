@@ -6,9 +6,6 @@ export type SparePartDocument = SparePart & Document;
 @Schema({ timestamps: true })
 export class SparePart {
 
-    @Prop({ required: true, unique: true })
-    code: string;
-
     @Prop({ required: true })
     name: string;
 

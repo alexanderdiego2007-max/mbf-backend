@@ -18,7 +18,7 @@ import * as QRCode from 'qrcode';
 
 @Controller('inventory')
 export class InventoryController {
-  constructor(private readonly inventoryService: InventoryService) {}
+  constructor(private readonly inventoryService: InventoryService) { }
 
   @Post()
   async create(@Body() createDto: Partial<Inventory>) {
@@ -46,31 +46,31 @@ export class InventoryController {
   }
 
   @Get('generate-qr/:id')
-async generateQR(@Param('id') id: string, @Res() res: Response) {
-  try {
-    const inventory = await this.inventoryService.findOne(id);
-    if (!inventory) {
-      throw new HttpException('Inventario no encontrado', HttpStatus.NOT_FOUND);
+  async generateQR(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const inventory = await this.inventoryService.findOne(id);
+      if (!inventory) {
+        throw new HttpException('Inventario no encontrado', HttpStatus.NOT_FOUND);
+      }
+
+      // Generar QR solo con el ID de la ficha técnica
+      const qrData = id;
+
+      // Convertir a imagen PNG en base64
+      const qrImage = await QRCode.toDataURL(qrData);
+
+      // Extraer solo la parte Base64 del Data URL
+      const base64Data = qrImage.replace(/^data:image\/png;base64,/, '');
+
+      // Enviar imagen como respuesta
+      const imgBuffer = Buffer.from(base64Data, 'base64');
+
+      res.setHeader('Content-Type', 'image/png');
+      res.send(imgBuffer);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-    // Generar QR solo con el ID de la ficha técnica
-    const qrData = id;
-
-    // Convertir a imagen PNG en base64
-    const qrImage = await QRCode.toDataURL(qrData);
-
-    // Extraer solo la parte Base64 del Data URL
-    const base64Data = qrImage.replace(/^data:image\/png;base64,/, '');
-
-    // Enviar imagen como respuesta
-    const imgBuffer = Buffer.from(base64Data, 'base64');
-
-    res.setHeader('Content-Type', 'image/png');
-    res.send(imgBuffer);
-  } catch (error) {
-    throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
   }
-}
 
   @Get('generate-pdf/:id')
   async generatePDF(@Param('id') id: string, @Res() res: Response) {
