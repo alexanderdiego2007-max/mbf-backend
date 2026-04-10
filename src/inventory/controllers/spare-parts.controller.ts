@@ -8,56 +8,43 @@ import {
     Delete,
     Query,
 } from '@nestjs/common';
+import { SparePartsService } from '../services/spare-parts.service';
 
 @Controller('spare-parts')
 export class SparePartsController {
 
-    // Crear repuesto
+    constructor(private readonly sparePartsService: SparePartsService) { }
+
+    //  Crear repuesto REAL
     @Post()
     create(@Body() data: any) {
-        return {
-            message: 'Repuesto creado correctamente',
-            data,
-        };
+        return this.sparePartsService.create(data);
     }
 
-    // Listar con filtros
+    //  Listar reales
     @Get()
     findAll(@Query() query: any) {
-        return {
-            message: 'Listado de repuestos',
-            filters: query,
-        };
+        return this.sparePartsService.findAll();
     }
 
-    // Obtener uno
+    //  Obtener uno
     @Get(':id')
     findOne(@Param('id') id: string) {
-        return {
-            message: 'Detalle del repuesto',
-            id,
-        };
+        return this.sparePartsService.findOne(id);
     }
 
-    // Actualizar
+    //  Actualizar
     @Patch(':id')
     update(
         @Param('id') id: string,
         @Body() data: any,
     ) {
-        return {
-            message: 'Repuesto actualizado',
-            id,
-            data,
-        };
+        return this.sparePartsService.update(id, data);
     }
 
-    // Eliminar (soft delete recomendado luego)
+    //  Eliminar (soft delete)
     @Delete(':id')
     remove(@Param('id') id: string) {
-        return {
-            message: 'Repuesto eliminado',
-            id,
-        };
+        return this.sparePartsService.remove(id);
     }
 }
