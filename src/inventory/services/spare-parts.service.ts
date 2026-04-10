@@ -46,7 +46,7 @@ export class SparePartsService {
     // Eliminar (soft delete usando active)
     async remove(id: string): Promise<SparePart> {
         const deleted = await this.sparePartModel
-            .findByIdAndUpdate(id, { active: false }, { new: true })
+            .findByIdAndDelete(id)
             .exec();
 
         if (!deleted) {
