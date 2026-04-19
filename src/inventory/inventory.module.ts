@@ -6,6 +6,7 @@ import { Inventory, InventorySchema } from './inventory.schema';
 import { SparePartsController } from './controllers/spare-parts.controller';
 import { SparePart, SparePartSchema } from './schemas/spare-part.schema';
 import { SparePartsService } from './services/spare-parts.service';
+import { ToolsController } from './controllers/tools.controller';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { SparePartsService } from './services/spare-parts.service';
       { name: Inventory.name, schema: InventorySchema }, { name: SparePart.name, schema: SparePartSchema },
     ]),
   ],
-  controllers: [InventoryController, SparePartsController],
+  controllers: [InventoryController, SparePartsController, ToolsController],
   providers: [InventoryService, SparePartsService],
 })
 export class InventoryModule { }
