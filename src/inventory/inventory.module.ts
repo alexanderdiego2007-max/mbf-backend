@@ -8,11 +8,13 @@ import { SparePart, SparePartSchema } from './schemas/spare-part.schema';
 import { SparePartsService } from './services/spare-parts.service';
 import { ToolsController } from './controllers/tools.controller';
 import { ToolsService } from './services/tools.service';
+import { Tool, ToolSchema } from './schemas/tool.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: Inventory.name, schema: InventorySchema }, { name: SparePart.name, schema: SparePartSchema },
+      { name: Inventory.name, schema: InventorySchema }, { name: SparePart.name, schema: SparePartSchema }, { name: Tool.name, schema: ToolSchema }, //ESTE ES EL QUE FALTABA
+
     ]),
   ],
   controllers: [InventoryController, SparePartsController, ToolsController],
