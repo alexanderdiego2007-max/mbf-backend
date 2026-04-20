@@ -6,9 +6,6 @@ export type ToolDocument = Tool & Document;
 @Schema({ timestamps: true })
 export class Tool {
 
-    @Prop({ required: true, unique: true })
-    codigo: string;
-
     @Prop({ required: true })
     nombre: string;
 
