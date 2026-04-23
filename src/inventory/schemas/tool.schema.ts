@@ -9,20 +9,39 @@ export class Tool {
     @Prop({ required: true })
     nombre: string;
 
-    @Prop()
-    categoria: string;
-
-    @Prop({ default: 'Disponible' })
-    estadoUso: string;
+    @Prop({ required: true, unique: true })
+    referencia: string;
 
     @Prop()
-    ubicacion: string;
+    descripcion: string;
+
+    // INVENTARIO
+    @Prop({ default: 'Unidad' })
+    unidad: string;
+
+    @Prop({ default: 'Principal' })
+    bodega: string;
+
+    // PRECIOS
+    @Prop({ required: true })
+    precio: number; // precio total
 
     @Prop()
+    precioBase: number;
+
+    @Prop({ default: 0 })
+    impuesto: number;
+
+    // STOCK
+    @Prop({ default: 0 })
+    cantidad: number;
+
+    @Prop()
+    costoUnidad: number;
+
+    // CONTROL
+    @Prop({ default: 'Almacén' })
     responsable: string;
-
-    @Prop()
-    observaciones: string;
 }
 
 export const ToolSchema = SchemaFactory.createForClass(Tool);
