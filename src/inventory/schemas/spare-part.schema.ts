@@ -8,7 +8,8 @@ export class SparePart {
 
     @Prop({ required: true })
     name: string;
-
+    @Prop({ required: true, unique: true })
+    reference: string;
     @Prop({ enum: ['producto', 'servicio'], required: true })
     type: string;
 
