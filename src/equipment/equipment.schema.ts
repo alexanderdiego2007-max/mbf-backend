@@ -7,7 +7,7 @@ export type EquipmentDocument = Equipment & Document;
 @Schema({ timestamps: true })
 export class Equipment {
 
- @Prop()
+  @Prop()
   serviceOrder: string;
 
   @Prop({ required: true })
@@ -89,6 +89,20 @@ export class Equipment {
 
   @Prop()
   username?: string;
+  @Prop({
+    type: [
+      {
+        sparePartId: { type: mongoose.Schema.Types.ObjectId, ref: 'SparePart' },
+        name: String,
+        reference: String,
+        quantity: Number,
+        price: Number,
+        total: Number
+      }
+    ],
+    default: []
+  })
+  items: any[];
 
 }
 

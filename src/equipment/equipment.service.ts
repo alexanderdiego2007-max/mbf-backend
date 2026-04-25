@@ -14,13 +14,13 @@ import { CounterService } from 'src/counter/counter.service';
 export class EquipmentService {
   private twilioClient: Twilio;
 
-constructor(
-  @InjectModel(Equipment.name)
-  private equipmentModel: Model<EquipmentDocument>,
-  @InjectModel('User') private userModel: Model<User>,
-  private readonly configService: ConfigService,
-  private readonly counterService: CounterService, //  NUEVO
-) {
+  constructor(
+    @InjectModel(Equipment.name)
+    private equipmentModel: Model<EquipmentDocument>,
+    @InjectModel('User') private userModel: Model<User>,
+    private readonly configService: ConfigService,
+    private readonly counterService: CounterService, //  NUEVO
+  ) {
     this.twilioClient = new Twilio(
       this.configService.get<string>('TWILIO_ACCOUNT_SID'),
       this.configService.get<string>('TWILIO_AUTH_TOKEN'),
@@ -28,31 +28,55 @@ constructor(
   }
 
   // Crear un nuevo equipo con fotos y factura
-async create(
-  data: Partial<Equipment>,
-  photoInitial?: Express.Multer.File[],
-  photoFinal?: Express.Multer.File[],
-  invoice?: Express.Multer.File,
-): Promise<Equipment> {
+  async create(
+    data: Partial<Equipment>,
+    photoInitial?: Express.Multer.File[],
+    photoFinal?: Express.Multer.File[],
+    invoice?: Express.Multer.File,
+  ): Promise<Equipment> {
 
-  const initialBuffers = photoInitial?.map(f => f.buffer) || [];
-  const finalBuffers = photoFinal?.map(f => f.buffer) || [];
+    const initialBuffers = photoInitial?.map(f => f.buffer) || [];
+    const finalBuffers = photoFinal?.map(f => f.buffer) || [];
 
-  //  GENERAR CONSECUTIVO
-  const nextSequence = await this.counterService.getNextSequence('serviceOrder');
+    // 🔥 Parsear items si vienen como string
+    if (typeof data.items === 'string') {
+      try {
+        data.items = JSON.parse(data.items);
+      } catch (err) {
+        throw new HttpException('Formato de items inválido', HttpStatus.BAD_REQUEST);
+      }
+    }
 
-  const serviceOrderFormatted = `OS-${nextSequence.toString().padStart(4, '0')}`;
+    // 🔥 Asegurar estructura y calcular total
+    if (Array.isArray(data.items)) {
+      data.items = data.items.map(item => ({
+        sparePartId: item.sparePartId || null,
+        name: item.name || '',
+        reference: item.reference || '',
+        price: Number(item.price) || 0,
+        tax: Number(item.tax) || 0,
+        quantity: Number(item.quantity) || 1,
+        total: (Number(item.price) || 0) * (Number(item.quantity) || 1)
+      }));
+    } else {
+      data.items = [];
+    }
 
-  const newEquipment = new this.equipmentModel({
-    ...data,
-    serviceOrder: serviceOrderFormatted, //  guardar
-    photoInitial: initialBuffers,
-    photoFinal: finalBuffers,
-    invoice: invoice?.buffer || null,
-  });
+    // 🔢 GENERAR CONSECUTIVO
+    const nextSequence = await this.counterService.getNextSequence('serviceOrder');
+    const serviceOrderFormatted = `OS-${nextSequence.toString().padStart(4, '0')}`;
 
-  return newEquipment.save();
-}
+    const newEquipment = new this.equipmentModel({
+      ...data,
+      items: data.items, // 👈 ahora sí seguro
+      serviceOrder: serviceOrderFormatted,
+      photoInitial: initialBuffers,
+      photoFinal: finalBuffers,
+      invoice: invoice?.buffer || null,
+    });
+
+    return newEquipment.save();
+  }
 
 
   // Obtener todos los equipos
@@ -433,17 +457,17 @@ async create(
           width: textWidthClient,
           align: 'center'
         });
-      //   doc
-      //     .fontSize(8)
-     //      .text('Tel: +57 304 130 1189', marginX, textY + 390, {
-     //        width: leftColWidth - 10,
-     //       align: 'left',
-      //     });
+        //   doc
+        //     .fontSize(8)
+        //      .text('Tel: +57 304 130 1189', marginX, textY + 390, {
+        //        width: leftColWidth - 10,
+        //       align: 'left',
+        //     });
 
-    //     doc.fontSize(8).text('info@medibasculas.com', marginX, textY + 401, {
-     //      width: leftColWidth - 10,
-    //       align: 'left',
-     //    });
+        //     doc.fontSize(8).text('info@medibasculas.com', marginX, textY + 401, {
+        //      width: leftColWidth - 10,
+        //       align: 'left',
+        //    });
 
         doc.fontSize(8).text('Cll 44 # 68-70, Medellin Colombia', marginX, textY + 412, {
           width: leftColWidth - 10,
@@ -508,10 +532,10 @@ async create(
       doc
         .fontSize(12)
         .font('Helvetica-Bold')
-.text(equipment.serviceOrder || 'OS-0000', boxX, boxY + 25, {
-  width: boxWidth,
-  align: 'center'
-});
+        .text(equipment.serviceOrder || 'OS-0000', boxX, boxY + 25, {
+          width: boxWidth,
+          align: 'center'
+        });
 
 
       contentY += 75;
