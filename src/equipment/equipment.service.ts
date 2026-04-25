@@ -166,7 +166,6 @@ export class EquipmentService {
     return (equipment.invoice as Buffer).toString('base64');
   }
 
-  // Actualizar un equipo
   async update(
     id: string,
     rawData: Partial<Equipment>,
@@ -175,27 +174,85 @@ export class EquipmentService {
     invoice?: Express.Multer.File,
   ): Promise<Equipment> {
     try {
-      // 🔹 1. Normalizar el body (puede venir con prototype nulo)
-      const data = Object.assign({}, rawData);
+      // 🔹 1. Normalizar el body
+      const data: any = Object.assign({}, rawData);
 
-      // 🔹 2. Validar existencia del equipo
+      // 🔹 2. Validar existencia
       const existingEquipment = await this.findOne(id);
       if (!existingEquipment) {
         throw new HttpException('Equipo no encontrado', HttpStatus.NOT_FOUND);
       }
 
-      // 🔹 4. Armar el objeto de actualización
+      // =========================
+      // 🔥 PARSEAR ITEMS
+      // =========================
+      if (data.items && typeof data.items === 'string') {
+        try {
+          data.items = JSON.parse(data.items);
+        } catch (error) {
+          throw new HttpException(
+            'Formato de items inválido',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
+      // =========================
+      // 🔥 VALIDAR Y LIMPIAR ITEMS
+      // =========================
+      if (data.items) {
+        if (!Array.isArray(data.items)) {
+          throw new HttpException(
+            'Items debe ser un arreglo',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        data.items = data.items.map((item: any) => {
+          if (!item.sparePartId) {
+            throw new HttpException(
+              'Cada item debe tener sparePartId',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+
+          return {
+            sparePartId: new mongoose.Types.ObjectId(item.sparePartId),
+            name: item.name || '',
+            reference: item.reference || '',
+            price: Number(item.price) || 0,
+            tax: Number(item.tax) || 0,
+            quantity: Number(item.quantity) || 0,
+            total: Number(item.total) || 0,
+          };
+        });
+      }
+
+      // 🔹 3. Construir objeto de actualización
       const updateData: Partial<Equipment> = { ...data };
 
-      // Convertir fechas si existen
+      // =========================
+      // 🔥 FECHAS
+      // =========================
       if (data.authorizationDate) {
         updateData.authorizationDate = new Date(data.authorizationDate);
       }
+
       if (data.deliveryDate) {
         updateData.deliveryDate = new Date(data.deliveryDate);
       }
 
-      // Reemplazar fotos si llegan nuevas
+      if (data.serviceEndDate) {
+        updateData.serviceEndDate = new Date(data.serviceEndDate);
+      }
+
+      if (data.estimatedDeliveryDate) {
+        updateData.estimatedDeliveryDate = new Date(data.estimatedDeliveryDate);
+      }
+
+      // =========================
+      // 🔥 FOTOS
+      // =========================
       if (photoInitial?.length) {
         updateData.photoInitial = photoInitial.map(f => f.buffer);
       }
@@ -204,51 +261,61 @@ export class EquipmentService {
         updateData.photoFinal = photoFinal.map(f => f.buffer);
       }
 
-
-
-      // Reemplazar factura si llega nueva
+      // =========================
+      // 🔥 FACTURA
+      // =========================
       if (invoice) {
         updateData.invoice = invoice.buffer;
       }
 
-      // Asignar técnico si viene en los datos
-      if (data.assignedTechnician) {
-        updateData.assignedTechnician = new mongoose.Types.ObjectId(data.assignedTechnician);
+      // =========================
+      // 🔥 TÉCNICO (FIX CRÍTICO)
+      // =========================
+      if (data.assignedTechnician && data.assignedTechnician !== '') {
+        updateData.assignedTechnician = new mongoose.Types.ObjectId(
+          data.assignedTechnician,
+        );
 
-        const technician = await this.userModel.findById(data.assignedTechnician);
+        const technician = await this.userModel.findById(
+          data.assignedTechnician,
+        );
+
         if (technician?.phone) {
           await this.twilioClient.messages.create({
             body: `Hola ${technician.name}, se te asignó un nuevo equipo para revisión.`,
             from: this.configService.get<string>('TWILIO_WHATSAPP_NUMBER'),
-            to: `whatsapp:+573245765262`,
+            to: `whatsapp:${technician.phone}`, // usa el número real
           });
         }
       }
 
-      // Guardar también el username
+      // =========================
+      // USERNAME
+      // =========================
       if (data.username) {
         updateData.username = data.username;
       }
 
-      // 🔹 5. Ejecutar actualización
+      // =========================
+      // 🧪 DEBUG OPCIONAL
+      // =========================
+      console.log('ITEMS FINAL:', updateData['items']);
+      console.log('TIPO ITEMS:', typeof updateData['items']);
+
+      // 🔹 4. Ejecutar update
       const updatedEquipment = await this.equipmentModel
-        .findByIdAndUpdate(id, updateData, { new: true, runValidators: false })
+        .findByIdAndUpdate(id, updateData, {
+          new: true,
+          runValidators: true,
+        })
         .populate('assignedTechnician', 'name username phone')
         .exec();
 
       return updatedEquipment;
     } catch (error) {
-      // 🔹 6. Manejo de errores más informativo
-      console.error('❌ Error al actualizar equipo:', error);
+      console.error('Error al actualizar equipo:', error);
 
       if (error instanceof HttpException) throw error;
-
-      if (error.message?.includes('username')) {
-        throw new HttpException(
-          `Falta el campo obligatorio 'username' al actualizar el equipo.`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
 
       throw new HttpException(
         `Error interno al actualizar el equipo: ${error.message}`,
