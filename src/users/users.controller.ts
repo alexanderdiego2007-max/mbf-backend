@@ -145,6 +145,12 @@ export class UsersController {
     throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
   }
 
+  @Post('logout')
+  async logout(@Req() req) {
+    // Si usas JWT simple (stateless)
+    return { message: 'Logout successful' };
+  }
+
   @Get('users')
   async getAllUsers() {
     return await this.usersService.findAll(); // Asegúrate de que estos datos incluyan address y phone
