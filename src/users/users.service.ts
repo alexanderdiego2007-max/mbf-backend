@@ -100,6 +100,8 @@ export class UsersService {
   async findTechnicians(): Promise<User[]> {
     return this.userModel.find({ role: 'Tecnico' }).select('-password').exec();
   }
-
+  async findById(id: string) {
+    return await this.userModel.findById(id);
+  }
 
 }

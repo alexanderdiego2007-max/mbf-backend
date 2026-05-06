@@ -240,6 +240,17 @@ export class UsersController {
     }
   }
 
+  @Get('users/:id')
+  async getUserById(@Param('id') id: string) {
+    const user = await this.usersService.findById(id);
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    return user;
+  }
+
   @Delete('users/:id')
   async deleteUser(@Param('id') id: string) {
     await this.usersService.deleteUser(id);
