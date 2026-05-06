@@ -176,6 +176,7 @@ export class UsersController {
       role?: string;
       address?: string;
       phone?: string;
+      city?: string; //agregar
     },
   ) {
     const {
@@ -189,6 +190,7 @@ export class UsersController {
       role,
       address,
       phone,
+      city,
     } = body;
 
     // Validar si hay campos a actualizar
@@ -202,7 +204,8 @@ export class UsersController {
       !password &&
       !role &&
       !address &&
-      !phone
+      !phone &&
+      !city
     ) {
       throw new BadRequestException('No fields provided to update');
     }
@@ -225,6 +228,7 @@ export class UsersController {
         role,
         address,
         phone,
+        city,
       });
 
       if (!updatedUser) {
