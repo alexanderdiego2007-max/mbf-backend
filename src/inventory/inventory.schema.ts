@@ -48,10 +48,25 @@ export class Inventory {
   }) // Campo para "Tecnología predominante"
   technology: string;
 
-  @Prop({ required: true, enum: ['Baja', 'Media', 'Alta'] }) // Campo para "Prioridad de mantenimiento"
+  @Prop({ required: true, enum: ['Baja', 'Media', 'Alta'] })
   maintenancePriority: string;
 
-  @Prop({unique: true, sparse: true })
+  @Prop()
+  firstname: string;
+
+  @Prop()
+  lastname: string;
+
+  @Prop()
+  email: string;
+
+  @Prop()
+  phone: string;
+
+  @Prop()
+  address: string;
+
+  @Prop({ unique: true, sparse: true })
   FT: String;
 
 }
