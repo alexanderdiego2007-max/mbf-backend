@@ -38,7 +38,7 @@ export class EquipmentService {
     const initialBuffers = photoInitial?.map(f => f.buffer) || [];
     const finalBuffers = photoFinal?.map(f => f.buffer) || [];
 
-    // 🔥 Parsear items si vienen como string
+    // Parsear items si vienen como string
     if (typeof data.items === 'string') {
       try {
         data.items = JSON.parse(data.items);
@@ -47,11 +47,12 @@ export class EquipmentService {
       }
     }
 
-    // 🔥 Asegurar estructura y calcular total
+    // Asegurar estructura y calcular total
     if (Array.isArray(data.items)) {
       data.items = data.items.map(item => ({
         sparePartId: item.sparePartId || null,
         name: item.name || '',
+        description: item.description || '',
         reference: item.reference || '',
         price: Number(item.price) || 0,
         tax: Number(item.tax) || 0,
@@ -62,13 +63,13 @@ export class EquipmentService {
       data.items = [];
     }
 
-    // 🔢 GENERAR CONSECUTIVO
+    // GENERAR CONSECUTIVO
     const nextSequence = await this.counterService.getNextSequence('serviceOrder');
     const serviceOrderFormatted = `OS-${nextSequence.toString().padStart(4, '0')}`;
 
     const newEquipment = new this.equipmentModel({
       ...data,
-      items: data.items, // 👈 ahora sí seguro
+      items: data.items, // ahora sí seguro
       serviceOrder: serviceOrderFormatted,
       photoInitial: initialBuffers,
       photoFinal: finalBuffers,
@@ -174,17 +175,17 @@ export class EquipmentService {
     invoice?: Express.Multer.File,
   ): Promise<Equipment> {
     try {
-      // 🔹 1. Normalizar el body
+      //  1. Normalizar el body
       const data: any = Object.assign({}, rawData);
 
-      // 🔹 2. Validar existencia
+      //  2. Validar existencia
       const existingEquipment = await this.findOne(id);
       if (!existingEquipment) {
         throw new HttpException('Equipo no encontrado', HttpStatus.NOT_FOUND);
       }
 
       // =========================
-      // 🔥 PARSEAR ITEMS
+      //  PARSEAR ITEMS
       // =========================
       if (data.items && typeof data.items === 'string') {
         try {
@@ -198,7 +199,7 @@ export class EquipmentService {
       }
 
       // =========================
-      // 🔥 VALIDAR Y LIMPIAR ITEMS
+      //  VALIDAR Y LIMPIAR ITEMS
       // =========================
       if (data.items) {
         if (!Array.isArray(data.items)) {
@@ -219,6 +220,7 @@ export class EquipmentService {
           return {
             sparePartId: new mongoose.Types.ObjectId(item.sparePartId),
             name: item.name || '',
+            description: item.description || '',
             reference: item.reference || '',
             price: Number(item.price) || 0,
             tax: Number(item.tax) || 0,
@@ -232,7 +234,7 @@ export class EquipmentService {
       const updateData: Partial<Equipment> = { ...data };
 
       // =========================
-      // 🔥 FECHAS
+      // FECHAS
       // =========================
       if (data.authorizationDate) {
         updateData.authorizationDate = new Date(data.authorizationDate);
@@ -251,7 +253,7 @@ export class EquipmentService {
       }
 
       // =========================
-      // 🔥 FOTOS
+      // FOTOS
       // =========================
       if (photoInitial?.length) {
         updateData.photoInitial = photoInitial.map(f => f.buffer);
@@ -262,14 +264,14 @@ export class EquipmentService {
       }
 
       // =========================
-      // 🔥 FACTURA
+      // FACTURA
       // =========================
       if (invoice) {
         updateData.invoice = invoice.buffer;
       }
 
       // =========================
-      // 🔥 TÉCNICO (FIX CRÍTICO)
+      // TÉCNICO (FIX CRÍTICO)
       // =========================
       if (data.assignedTechnician && data.assignedTechnician !== '') {
         updateData.assignedTechnician = new mongoose.Types.ObjectId(

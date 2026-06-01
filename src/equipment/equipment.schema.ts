@@ -92,11 +92,16 @@ export class Equipment {
   @Prop({
     type: [
       {
-        sparePartId: { type: mongoose.Schema.Types.ObjectId, ref: 'SparePart' },
+        sparePartId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'SparePart'
+        },
         name: String,
+        description: String,
         reference: String,
         quantity: Number,
         price: Number,
+        tax: Number,
         total: Number
       }
     ],
